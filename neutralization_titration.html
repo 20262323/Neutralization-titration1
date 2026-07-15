@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>중화 적정 실험 시뮬레이션</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    background: linear-gradient(135deg, #eef4ff, #fdf6ff);
+    margin: 0;
+    padding: 20px;
+    min-height: 100vh;
+  }
+  h1 { text-align: center; color: #2c3e6b; margin-bottom: 4px; }
+  .subtitle { text-align: center; color: #666; margin-bottom: 20px; font-size: 14px; }
+
+  .layout {
+    max-width: 1000px;
+    margin: 0 auto;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .panel {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+
+  .panel h2 {
+    margin-top: 0;
+    font-size: 16px;
+    color: #444;
+    border-left: 5px solid #6c8cff;
+    padding-left: 10px;
+  }
+
+  /* 실험대 영역 */
+  #apparatusPanel {
+    flex: 1 1 480px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  #resultLabel {
+    margin-top: 10px;
+    font-size: 20px;
+    font-weight: bold;
+    color: #d1495b;
+    min-height: 28px;
+    text-align: center;
+  }
+  #indicatorLabel {
+    font-size: 13px;
+    color: #777;
+    margin-top: -6px;
+    margin-bottom: 6px;
+  }
+
+  /* 컨트롤 영역 */
+  #controlPanel { flex: 1 1 280px; }
+
+  .control-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding: 10px 14px;
+    background: #f7f9ff;
+    border-radius: 10px;
+  }
+  .control-row .label {
+    font-weight: bold;
+    color: #2c3e6b;
+    font-size: 15px;
+  }
+  .control-row .adjust {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .control-row button {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    background: #dbe3ff;
+    color: #2c3e6b;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .control-row button:hover { background: #b9c8ff; }
+  .control-row button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .control-row .value {
+    min-width: 62px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+  }
+
+  .fixed-info {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    background: #fafafa;
+    border-radius: 8px;
+  }
+
+  #startBtn {
+    width: 100%;
+    background: #4a6cf7;
+    color: white;
+    border: none;
+    padding: 14px;
+    font-size: 17px;
+    font-weight: bold;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-top: 6px;
+    box-shadow: 0 3px 8px rgba(74,108,247,0.4);
+  }
+  #startBtn:hover { background: #3a58d8; }
+  #startBtn:disabled { background: #aab4d6; cursor: not-allowed; box-shadow: none; }
+
+  #resetBtn {
+    width: 100%;
+    background: #eee;
+    color: #333;
+    border: none;
+    padding: 12px;
+    font-size: 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  #resetBtn:hover { background: #ddd; }
+
+  #progressLabel {
+    font-size: 13px;
+    color: #6c8cff;
+    font-weight: bold;
+    min-height: 18px;
+  }
+
+  .toggle-row {
+    margin: -10px 0 16px 0;
+  }
+  .toggle-row button {
+    width: 100%;
+    background: #f1e9ff;
+    color: #6a3fb0;
+    border: none;
+    padding: 9px;
+    font-size: 13px;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .toggle-row button:hover { background: #e2d2fb; }
+  .toggle-row button:disabled { opacity: 0.4; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<h1>🧪 중화 적정 실험</h1>
+<div class="subtitle">고등학교 화학 4단원 - NaOH와 HCl의 중화 적정</div>
+
+<div class="layout">
+
+  <div class="panel" id="apparatusPanel">
+    <h2>실험 장치</h2>
+    <svg id="scene" viewBox="0 0 400 520" width="100%" style="max-width:420px;">
+
+      <defs>
+        <radialGradient id="dropGradient" cx="35%" cy="30%" r="70%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="35%" stop-color="#cfe0ff"/>
+          <stop offset="100%" stop-color="#7ea0f5"/>
+        </radialGradient>
+      </defs>
+
+      <!-- 스탠드 베이스 -->
+      <rect x="20" y="480" width="150" height="14" rx="3" fill="#555"/>
+      <!-- 스탠드 기둥 -->
+      <rect x="55" y="60" width="10" height="420" rx="2" fill="#777"/>
+
+      <!-- 뷰렛 집게 -->
+      <g id="buretClamp">
+        <rect x="60" y="95" width="115" height="10" rx="3" fill="#888"/>
+        <rect x="160" y="88" width="10" height="24" rx="2" fill="#888"/>
+      </g>
+
+      <!-- 뷰렛 -->
+      <g id="buret">
+        <text id="buretFormulaLabel" x="175" y="52" font-size="13" font-weight="bold" text-anchor="middle" fill="#2c3e6b">NaOH</text>
+        <!-- 눈금 튜브 몸통 -->
+        <rect x="163" y="60" width="24" height="190" rx="3" fill="#eef3ff" stroke="#99a8cc" stroke-width="2"/>
+        <!-- 눈금선 -->
+        <g stroke="#b7c2e6" stroke-width="1">
+          <line x1="163" y1="80" x2="175" y2="80"/>
+          <line x1="163" y1="105" x2="175" y2="105"/>
+          <line x1="163" y1="130" x2="175" y2="130"/>
+          <line x1="163" y1="155" x2="175" y2="155"/>
+          <line x1="163" y1="180" x2="175" y2="180"/>
+          <line x1="163" y1="205" x2="175" y2="205"/>
+          <line x1="163" y1="230" x2="175" y2="230"/>
+        </g>
+        <!-- 액체 (NaOH), 높이는 JS로 조절 -->
+        <rect id="buretLiquid" x="165" y="62" width="20" height="186" fill="#cfe0ff"/>
+        <!-- 콕(스톱콕) -->
+        <rect x="169" y="250" width="12" height="10" fill="#888"/>
+        <polygon points="169,260 181,260 175,278" fill="#eef3ff" stroke="#99a8cc" stroke-width="1.5"/>
+      </g>
+
+      <!-- 삼각 플라스크 -->
+      <g id="flask">
+        <text id="flaskFormulaLabel" x="175" y="295" font-size="12" font-weight="bold" text-anchor="middle" fill="#2c3e6b">HCl</text>
+        <path d="M 165,300 L 165,335 L 122,420 L 122,432 Q 122,438 128,438 L 222,438 Q 228,438 228,432 L 228,420 L 185,335 L 185,300 Z"
+              fill="#f2f6ff" stroke="#99a8cc" stroke-width="2.5"/>
+        <!-- 플라스크 내부 액체 (클립 사용) -->
+        <clipPath id="flaskClip">
+          <path d="M 165,300 L 165,335 L 122,420 L 122,432 Q 122,438 128,438 L 222,438 Q 228,438 228,432 L 228,420 L 185,335 L 185,300 Z"/>
+        </clipPath>
+        <rect id="flaskLiquid" x="115" y="365" width="120" height="73" fill="#fbfcff" clip-path="url(#flaskClip)"/>
+        <!-- 교반 자석 -->
+        <ellipse id="stirBar" cx="175" cy="428" rx="16" ry="5" fill="#333"/>
+      </g>
+
+      <!-- 떨어지는 방울 (플라스크보다 위 레이어에 그려 잘 보이게 함) -->
+      <g id="dropGroup" opacity="0">
+        <ellipse cx="0" cy="0" rx="4.2" ry="6.5" fill="url(#dropGradient)" stroke="#7ea0f5" stroke-width="0.8"/>
+      </g>
+      <!-- 방울이 떨어질 때 생기는 스플래시 효과 -->
+      <g id="splashLayer"></g>
+
+      <!-- 교반기(핫플레이트/스터러) -->
+      <g id="stirrer">
+        <rect x="105" y="450" width="140" height="18" rx="4" fill="#3d3d3d"/>
+        <rect x="100" y="465" width="150" height="10" rx="3" fill="#222"/>
+        <circle id="stirrerLight" cx="230" cy="459" r="4" fill="#555"/>
+      </g>
+    </svg>
+
+    <div id="indicatorLabel">지시약: 페놀프탈레인 (무색 → 분홍색)</div>
+    <div id="progressLabel"></div>
+    <div id="resultLabel"></div>
+  </div>
+
+  <div class="panel" id="controlPanel">
+    <h2>실험 조건 설정</h2>
+
+    <div class="control-row">
+      <div class="label" id="baseLabel">NaOH 농도 (뷰렛)</div>
+      <div class="adjust">
+        <button id="naohMinus">－</button>
+        <div class="value" id="naohValue">0.1 M</div>
+        <button id="naohPlus">＋</button>
+      </div>
+    </div>
+    <div class="toggle-row">
+      <button id="baseToggleBtn">⇄ 2가 염기(Ca(OH)₂)로 변경</button>
+    </div>
+
+    <div class="control-row">
+      <div class="label" id="acidLabel">HCl 농도 (플라스크)</div>
+      <div class="adjust">
+        <button id="hclMinus">－</button>
+        <div class="value" id="hclValue">0.1 M</div>
+        <button id="hclPlus">＋</button>
+      </div>
+    </div>
+    <div class="toggle-row">
+      <button id="acidToggleBtn">⇄ 2가 산(H₂SO₄)로 변경</button>
+    </div>
+
+    <div class="fixed-info" id="fixedInfo">플라스크 속 HCl 용액의 부피는 20.0 mL로 고정되어 있습니다.</div>
+
+    <button id="startBtn">▶ 결과 보기</button>
+    <button id="resetBtn">↺ 초기화</button>
+  </div>
+
+</div>
+
+<script>
+  const V_HCL_FIXED = 20.0; // mL, 고정 (산 용액의 부피)
+  let naohConc = 0.1;
+  let hclConc = 0.1;
+  const CONC_MIN = 0.1, CONC_MAX = 1.0, CONC_STEP = 0.1;
+
+  // 염기/산 종류 선택 (각각 1가 기본종 + 2가 종 1개씩)
+  const BASE_INFO = {
+    mono: { formula: "NaOH", display: "NaOH", rowLabel: "NaOH 농도 (뷰렛)", valence: 1, toggleText: "⇄ 2가 염기(Ca(OH)₂)로 변경" },
+    di:   { formula: "Ca(OH)₂", display: "Ca(OH)₂", rowLabel: "Ca(OH)₂ 농도 (뷰렛)", valence: 2, toggleText: "⇄ 1가 염기(NaOH)로 변경" }
+  };
+  const ACID_INFO = {
+    mono: { formula: "HCl", display: "HCl", rowLabel: "HCl 농도 (플라스크)", valence: 1, toggleText: "⇄ 2가 산(H₂SO₄)로 변경" },
+    di:   { formula: "H₂SO₄", display: "H₂SO₄", rowLabel: "H₂SO₄ 농도 (플라스크)", valence: 2, toggleText: "⇄ 1가 산(HCl)로 변경" }
+  };
+  let baseKind = "mono";
+  let acidKind = "mono";
+
+  const baseLabelEl = document.getElementById("baseLabel");
+  const acidLabelEl = document.getElementById("acidLabel");
+  const baseToggleBtn = document.getElementById("baseToggleBtn");
+  const acidToggleBtn = document.getElementById("acidToggleBtn");
+  const fixedInfoEl = document.getElementById("fixedInfo");
+  const buretFormulaLabel = document.getElementById("buretFormulaLabel");
+  const flaskFormulaLabel = document.getElementById("flaskFormulaLabel");
+
+  const naohValueEl = document.getElementById("naohValue");
+  const hclValueEl = document.getElementById("hclValue");
+  const startBtn = document.getElementById("startBtn");
+  const resetBtn = document.getElementById("resetBtn");
+  const resultLabel = document.getElementById("resultLabel");
+
+  function fmt(n) { return n.toFixed(1); }
+
+  function refreshLabels() {
+    naohValueEl.textContent = fmt(naohConc) + " M";
+    hclValueEl.textContent = fmt(hclConc) + " M";
+  }
+  refreshLabels();
+
+  function refreshChemLabels() {
+    const b = BASE_INFO[baseKind];
+    const a = ACID_INFO[acidKind];
+    baseLabelEl.textContent = b.rowLabel;
+    acidLabelEl.textContent = a.rowLabel;
+    baseToggleBtn.textContent = b.toggleText;
+    acidToggleBtn.textContent = a.toggleText;
+    fixedInfoEl.textContent = "플라스크 속 " + a.display + " 용액의 부피는 " + fmt(V_HCL_FIXED) + " mL로 고정되어 있습니다.";
+    buretFormulaLabel.textContent = b.display;
+    flaskFormulaLabel.textContent = a.display;
+  }
+  refreshChemLabels();
+
+  baseToggleBtn.addEventListener("click", () => {
+    baseKind = baseKind === "mono" ? "di" : "mono";
+    refreshChemLabels();
+  });
+  acidToggleBtn.addEventListener("click", () => {
+    acidKind = acidKind === "mono" ? "di" : "mono";
+    refreshChemLabels();
+  });
+
+  document.getElementById("naohMinus").addEventListener("click", () => {
+    naohConc = Math.max(CONC_MIN, +(naohConc - CONC_STEP).toFixed(1));
+    refreshLabels();
+  });
+  document.getElementById("naohPlus").addEventListener("click", () => {
+    naohConc = Math.min(CONC_MAX, +(naohConc + CONC_STEP).toFixed(1));
+    refreshLabels();
+  });
+  document.getElementById("hclMinus").addEventListener("click", () => {
+    hclConc = Math.max(CONC_MIN, +(hclConc - CONC_STEP).toFixed(1));
+    refreshLabels();
+  });
+  document.getElementById("hclPlus").addEventListener("click", () => {
+    hclConc = Math.min(CONC_MAX, +(hclConc + CONC_STEP).toFixed(1));
+    refreshLabels();
+  });
+
+  // ---- SVG 요소 ----
+  const buretLiquid = document.getElementById("buretLiquid");
+  const flaskLiquid = document.getElementById("flaskLiquid");
+  const dropGroup = document.getElementById("dropGroup");
+  const splashLayer = document.getElementById("splashLayer");
+  const stirBar = document.getElementById("stirBar");
+  const stirrerLight = document.getElementById("stirrerLight");
+  const progressLabel = document.getElementById("progressLabel");
+
+  const BURET_TOP = 62;
+  const BURET_FULL_HEIGHT = 186;
+  let pendingTimeoutId = null;
+
+  function setControlsEnabled(enabled) {
+    [document.getElementById("naohMinus"), document.getElementById("naohPlus"),
+     document.getElementById("hclMinus"), document.getElementById("hclPlus"),
+     baseToggleBtn, acidToggleBtn,
+     startBtn].forEach(b => b.disabled = !enabled);
+  }
+
+  function resetScene() {
+    if (pendingTimeoutId) { clearTimeout(pendingTimeoutId); pendingTimeoutId = null; }
+    buretLiquid.setAttribute("y", BURET_TOP);
+    buretLiquid.setAttribute("height", BURET_FULL_HEIGHT);
+    flaskLiquid.setAttribute("fill", "#fbfcff");
+    dropGroup.classList.remove("falling");
+    dropGroup.setAttribute("opacity", "0");
+    splashLayer.innerHTML = "";
+    stirBar.classList.remove("spinning");
+    resultLabel.textContent = "";
+    progressLabel.textContent = "";
+    setControlsEnabled(true);
+  }
+
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    naohConc = 0.1;
+    hclConc = 0.1;
+    refreshLabels();
+    resetScene();
+  });
+
+  // 회전 애니메이션(교반) 위한 스타일 삽입
+  const styleTag = document.createElement("style");
+  styleTag.innerHTML = `
+    @keyframes stirSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    #stirBar.spinning {
+      animation: stirSpin 0.5s linear infinite;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+    @keyframes dropFall {
+      0%   { transform: translate(175px, 284px) scale(1, 1); opacity: 1; }
+      78%  { transform: translate(175px, 362px) scale(0.9, 1.25); opacity: 1; }
+      90%  { transform: translate(175px, 367px) scale(1.6, 0.55); opacity: 1; }
+      100% { transform: translate(175px, 368px) scale(1.8, 0.3); opacity: 0; }
+    }
+    #dropGroup.falling {
+      animation: dropFall var(--drop-duration, 0.32s) ease-in forwards;
+    }
+    @keyframes splashPop {
+      0%   { transform: translate(175px, 366px) scale(0.2); opacity: 0.9; }
+      100% { transform: translate(175px, 366px) scale(1.6); opacity: 0; }
+    }
+    .splash {
+      animation: splashPop 0.35s ease-out forwards;
+    }
+  `;
+  document.head.appendChild(styleTag);
+
+  // 방울 하나를 낙하시키고, 착지 시점에 잔물결(스플래시) 효과를 만든다.
+  // duration이 짧을수록 방울이 빨리 떨어지고, 길수록 천천히 떨어져 속도감이 살아난다.
+  function spawnDrop(duration) {
+    dropGroup.classList.remove("falling");
+    dropGroup.style.setProperty("--drop-duration", duration + "s");
+    void dropGroup.offsetWidth; // reflow로 애니메이션 재시작
+    dropGroup.setAttribute("opacity", "1");
+    dropGroup.classList.add("falling");
+
+    setTimeout(() => {
+      const ns = "http://www.w3.org/2000/svg";
+      const splash = document.createElementNS(ns, "ellipse");
+      splash.setAttribute("rx", "9");
+      splash.setAttribute("ry", "3");
+      splash.setAttribute("fill", "#ffffff");
+      splash.setAttribute("opacity", "0.8");
+      splash.classList.add("splash");
+      splashLayer.appendChild(splash);
+      setTimeout(() => splash.remove(), 380);
+    }, duration * 1000 * 0.88);
+  }
+
+  function runTitration() {
+    setControlsEnabled(false);
+    resultLabel.textContent = "";
+    if (pendingTimeoutId) clearTimeout(pendingTimeoutId);
+    buretLiquid.setAttribute("y", BURET_TOP);
+    buretLiquid.setAttribute("height", BURET_FULL_HEIGHT);
+    flaskLiquid.setAttribute("fill", "#fbfcff");
+    splashLayer.innerHTML = "";
+    stirBar.classList.add("spinning");
+    stirrerLight.setAttribute("fill", "#5ad46a");
+
+    const baseInfo = BASE_INFO[baseKind];
+    const acidInfo = ACID_INFO[acidKind];
+
+    // 당량점: 산이 내놓는 H+ 몰수 = 염기가 내놓는 OH- 몰수
+    // (산 농도 x 산 부피 x 산의 가수) = (염기 농도 x 염기 부피 x 염기의 가수)
+    const veq = (acidInfo.valence * hclConc * V_HCL_FIXED) / (baseInfo.valence * naohConc); // 종말점 부피 (mL)
+
+    // 방울 수(=애니메이션 길이)를 실제 사용량(veq)에 비례하게 산출한다.
+    // 방울 1개당 약 0.5mL로 가정하고, 화면상 너무 짧거나 길지 않도록 범위를 제한한다.
+    const DROP_VOLUME = 0.5;
+    const totalSteps = Math.max(14, Math.min(90, Math.round(veq / DROP_VOLUME)));
+    const colorChangeSteps = Math.max(2, Math.round(totalSteps * 0.08)); // 종말점 부근 방울 수
+
+    let step = 0;
+
+    function nextDelayAndDuration(currentStep) {
+      const remaining = totalSteps - currentStep;
+      if (remaining <= colorChangeSteps) {
+        // 종말점에 가까워질수록 한 방울씩 조심스럽게, 느리게 떨어뜨린다.
+        return { delay: 550, duration: 0.55 };
+      } else if (currentStep <= 3) {
+        // 처음 몇 방울은 콕을 조절하며 다소 신중하게 시작한다.
+        return { delay: 300, duration: 0.4 };
+      }
+      // 중간 구간은 빠르게 적정을 진행한다 (사용량이 많을수록 이 구간이 길어져 전체 시간이 늘어난다).
+      return { delay: 110, duration: 0.28 };
+    }
+
+    function tick() {
+      step++;
+      const { delay, duration } = nextDelayAndDuration(step - 1);
+      spawnDrop(duration);
+
+      // 뷰렛 액체 높이 감소
+      const remainRatio = Math.max(0, 1 - step / totalSteps);
+      buretLiquid.setAttribute("height", (BURET_FULL_HEIGHT * remainRatio).toFixed(1));
+      buretLiquid.setAttribute("y", (BURET_TOP + BURET_FULL_HEIGHT * (1 - remainRatio)).toFixed(1));
+
+      const addedVol = (veq * step / totalSteps);
+      progressLabel.textContent = "적정 중... 넣은 " + baseInfo.display + ": 약 " + addedVol.toFixed(1) + " mL (" + step + "/" + totalSteps + " 방울)";
+
+      // 종말점 근처에서 색 변화(무색 -> 옅은 분홍 -> 진한 분홍)
+      if (step >= totalSteps - colorChangeSteps && step < totalSteps) {
+        flaskLiquid.setAttribute("fill", "#ffd9ec"); // 옅은 분홍(살짝 넘친 순간)
+      }
+
+      if (step >= totalSteps) {
+        flaskLiquid.setAttribute("fill", "#ff6fb0"); // 완전한 종말점 색
+        stirBar.classList.remove("spinning");
+        stirrerLight.setAttribute("fill", "#555");
+        progressLabel.textContent = "";
+        resultLabel.textContent = "중화에 사용된 " + baseInfo.display + " 부피: " + veq.toFixed(1) + " mL";
+        setControlsEnabled(true);
+        pendingTimeoutId = null;
+      } else {
+        pendingTimeoutId = setTimeout(tick, delay);
+      }
+    }
+
+    pendingTimeoutId = setTimeout(tick, 200);
+  }
+
+  startBtn.addEventListener("click", runTitration);
+</script>
+
+</body>
+</html>
